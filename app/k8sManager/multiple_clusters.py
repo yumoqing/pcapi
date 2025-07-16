@@ -207,6 +207,10 @@ def new_cluster_install(params):
             # "files/nfs-provisioner-deploy.yaml":"/opt/nfs-provisioner-deploy.yaml",
             "files/nfs-rbac.yaml": "/opt/nfs-rbac.yaml",
             "files/nvidia-device-plugin.yml": "/opt/nvidia-device-plugin.yml",
+            "files/libnvidia-container-tools_1.17.8-1_amd64.deb": "/opt/libnvidia-container-tools_1.17.8-1_amd64.deb",
+            "files/libnvidia-container1_1.17.8-1_amd64.deb": "/opt/libnvidia-container1_1.17.8-1_amd64.deb",
+            "files/nvidia-container-toolkit_1.17.8-1_amd64.deb": "/opt/nvidia-container-toolkit_1.17.8-1_amd64.deb",
+            "files/nvidia-container-toolkit-base_1.17.8-1_amd64.deb": "/opt/nvidia-container-toolkit-base_1.17.8-1_amd64.deb",
             "script/k8s_uninstall.sh": "/opt/k8s_uninstall.sh",
             "script/import_images.sh": "/opt/import_images.sh",
             }

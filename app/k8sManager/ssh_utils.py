@@ -186,7 +186,7 @@ def execute_sudo_command(ssh, command, password, real_time_log, sudo_timeout, us
             if time.time() - start_time > sudo_timeout:
                 raise Exception(f"等待sudo密码提示超时（{sudo_timeout}秒）: {sudo_cmd}")
             if not ready:
-                time.sleep(1.5)  # 避免CPU占用过高
+                time.sleep(0.5)  # 避免CPU占用过高
 
         # 如果没有收到密码提示但命令执行超时，可能是权限问题
         if not password_prompt:
@@ -218,7 +218,7 @@ def execute_sudo_command(ssh, command, password, real_time_log, sudo_timeout, us
                     error += line
                 if channel.exit_status_ready():
                     break
-                time.sleep(1.5)  # 避免CPU占用过高
+                time.sleep(0.1)  # 避免CPU占用过高
         else:
             # 非实时模式读取输出
             result += channel.recv(-1).decode(errors="replace") if channel.recv_ready() else ""
