@@ -1,0 +1,11 @@
+info('test .....{params_kw=}')
+
+debug(f"node_label_opt接收cpcc参数：{params_kw=}")
+
+try:
+    result_dict["data"] = node_label_opt(params_kw)
+    result_dict["status"] = True
+    result_dict["info"] = "operate success"
+except Exception as e:
+    print(e)
+return result_dict

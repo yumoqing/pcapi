@@ -1,0 +1,7 @@
+info('test .....{params_kw=}')
+
+cn=params_kw["cn"]
+result=get_one_cn(cn)
+
+result_dict["data"]=result
+return result_dict

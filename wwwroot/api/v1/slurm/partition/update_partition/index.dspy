@@ -1,0 +1,7 @@
+info('test .....{params_kw=}')
+
+
+result=update_partition(params_kw)
+
+result_dict["data"]=result
+return result_dict

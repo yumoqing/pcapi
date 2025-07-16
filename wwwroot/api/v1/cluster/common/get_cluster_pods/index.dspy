@@ -1,0 +1,16 @@
+info('test .....{params_kw=}')
+
+#endpoint=params_kw["endpoint"]
+
+#if "_" not in endpoint and "-" not in endpoint:
+#    result_dict["info"] = "endpoint format not allowed"
+#    return result_dict
+#debug(f"accept cpcc node: {params_kw=}")
+try:
+    result_dict["data"] = get_cluster_pods_by_kubeconfig(params_kw)
+    result_dict["status"] = True
+    result_dict["info"] = "operate success"
+except:
+    import traceback
+    debug(traceback.format_exc())
+return result_dict

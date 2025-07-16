@@ -1,0 +1,91 @@
+# -*- coding: utf-8 -*-
+# @Time: 2024/12/5 17:07
+
+import kubernetes.client
+from kubernetes.client.rest import ApiException
+from kubernetes import config
+
+# 加载 Kubernetes 配置（如果在集群内运行则可以忽略）
+config.load_kube_config()
+
+
+def check_resource_availability(cpu_request, memory_request, storage_request, gpu_request):
+    """
+    检查集群是否有足够资源来创建 Pod。
+    :param cpu_request: 请求的 CPU 核数
+    :param memory_request: 请求的内存（单位为MiB）
+    :param storage_request: 请求的存储（单位为GiB）
+    :param gpu_request: 请求的 GPU 数量
+    :return: 是否有足够资源
+    """
+    v1 = kubernetes.client.CoreV1Api()
+
+    # 获取所有节点的信息
+    nodes = v1.list_node()
+
+    for node in nodes.items:
+        cpu_capacity = node.status.capacity['cpu']
+        memory_capacity = node.status.capacity['memory']
+        storage_capacity = node.status.capacity.get('ephemeral-storage', '0Gi')  # 有些节点存储没有显示
+        gpu_capacity = 0  # 默认无 GPU
+        if 'nvidia.com/gpu' in node.status.capacity:
+            gpu_capacity = node.status.capacity['nvidia.com/gpu']
+
+        # 将单位转换成整数进行比较
+        cpu_capacity = int(cpu_capacity)
+        memory_capacity = int(memory_capacity[:-2])  # 去掉最后的Mi
+        storage_capacity = int(storage_capacity[:-2])  # 去掉最后的Gi
+        gpu_capacity = int(gpu_capacity)
+
+        # 判断该节点是否满足资源请求
+        if (cpu_capacity >= cpu_request and
+                memory_capacity >= memory_request and
+                storage_capacity >= storage_request and
+                gpu_capacity >= gpu_request):
+            print(f"Node {node.metadata.name} has enough resources.")
+            return True
+    return False
+
+
+def create_pod(cpu_request, memory_request, storage_request, gpu_request):
+    """创建 Pod,先检查资源是否足够"""
+    if not check_resource_availability(cpu_request, memory_request, storage_request, gpu_request):
+        print("No node has enough resources to fulfill the request.")
+        return
+
+    # 如果资源足够,则创建 Pod
+    v1 = kubernetes.client.CoreV1Api()
+    pod_manifest = {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "metadata": {"name": "my-pod"},
+        "spec": {
+            "containers": [{
+                "name": "my-container",
+                "image": "nginx",  # 可替换为需要的镜像
+                "resources": {
+                    "requests": {
+                        "cpu": f"{cpu_request}m",  # 单位是millicpu
+                        "memory": f"{memory_request}Mi",  # 单位是Mi
+                        "ephemeral-storage": f"{storage_request}Gi",  # 单位是Gi
+                    },
+                    "limits": {
+                        "cpu": f"{cpu_request}m",
+                        "memory": f"{memory_request}Mi",
+                        "ephemeral-storage": f"{storage_request}Gi",
+                    }
+                }
+            }]
+        }
+    }
+
+    try:
+        # 创建 Pod
+        v1.create_namespaced_pod(namespace="default", body=pod_manifest)
+        print("Pod created successfully.")
+    except ApiException as e:
+        print(f"Error creating pod: {e}")
+
+
+# 示例使用：请求 1 CPU、2G 内存、30G 存储、0 GPU
+create_pod(1000, 2048, 30, 0)  # 1000m CPU, 2048Mi 内存, 30Gi 存储, 0 GPU

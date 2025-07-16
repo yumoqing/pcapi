@@ -1,0 +1,5 @@
+
+result=list_partition_detail_json(params_kw)
+
+result_dict["data"]=result
+return result_dict

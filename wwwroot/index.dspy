@@ -1,0 +1,8 @@
+info('test .....{params_kw=}')
+
+data = {
+	"k":"${key}$",
+	"s":"${secretkey}$"
+}
+ns = paramify(data, params_kw)
+return ns

@@ -1,0 +1,7 @@
+info('test .....{params_kw=}')
+
+
+result=kill_job(params_kw["jobId"])
+
+result_dict["data"]=result
+return result_dict

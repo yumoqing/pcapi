@@ -1,0 +1,12 @@
+info('test .....{params_kw=}')
+
+debug(f"接收cpcc参数：{params_kw=}")
+
+try:
+    result_dict["data"] = yaml_apply_delete(params_kw)
+    result_dict["status"] = True
+    result_dict["info"] = "operate success"
+except Exception as e:
+    debug(f'{e}')
+    result_dict["info"] = e
+return result_dict

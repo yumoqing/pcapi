@@ -1,0 +1,7 @@
+info('test .....{params_kw=}')
+
+
+result=get_storage_json(params_kw["point"])
+
+result_dict["data"]=result
+return result_dict

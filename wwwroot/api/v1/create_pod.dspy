@@ -1,0 +1,73 @@
+async def create_pod(ns={}):
+    import hashlib
+    ns['pvcname'] = hashlib.md5(str(time.time()).encode()).hexdigest()[:10]
+    ns['podname'] = ns['pvcname']
+    ns['containername'] = ns['pvcname']
+    ns['volumename'] = ns['pvcname']
+    ns['namespace'] = ns['namespace'] if ns.get('namespace') else 'default'
+    
+    namespace = ns['namespace']  # 使用的命名空间
+    core_api = client.CoreV1Api()
+
+    # 创建 PVC
+    #create_persistent_volume_claim(core_api, namespace)
+    pvc = client.V1PersistentVolumeClaim(
+        metadata=client.V1ObjectMeta(name=ns['pvcname']),
+        spec=client.V1PersistentVolumeClaimSpec(
+            access_modes=["ReadWriteOnce"],
+            resources=client.V1ResourceRequirements(
+                requests={"storage": str(ns['storage']) + "Gi"}
+            )
+        )
+    )
+    core_api.create_namespaced_persistent_volume_claim(namespace=namespace, body=pvc)
+    print("PVC created.")
+
+    # 创建 Pod
+    # create_pod(core_api, namespace)
+    pod = client.V1Pod(
+        metadata=client.V1ObjectMeta(name=ns['podname']),
+        spec=client.V1PodSpec(
+            containers=[
+                client.V1Container(
+                    name=ns['containername'],
+                    image=ns['image'],  # 使用 Nginx 容器
+                    command=["tail", "-f", "/dev/null"],  # 确保容器保持运行
+                    resources=client.V1ResourceRequirements(
+                        requests={
+                            "cpu": str(ns['cpu']),  # 请求 1 个 CPU
+                            "memory": str(ns['memory']) + "Gi",  # 请求 5 GB 内存
+                        },
+                        limits={
+                            "cpu": str(ns['cpu']),  # 限制最多使用 4 个 CPU
+                            "memory": str(ns['memory']) + "Gi",  # 限制最多使用 8 GB 内存
+                            "nvidia.com/gpu": ns['gpu'],
+                            "nvidia.com/gpumem": ns['gpumem']
+                        },
+                    ),
+                    volume_mounts=[
+                        client.V1VolumeMount(
+                            name=ns['volumename'],
+                            mount_path="/usr/share/",  # 挂载路径
+                        )
+                    ],
+                )
+            ],
+            volumes=[
+                client.V1Volume(
+                    name=ns['volumename'],
+                    persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
+                        claim_name=ns['pvcname']
+                    ),
+                )
+            ],
+        )
+    )
+    core_api.create_namespaced_pod(namespace=namespace, body=pod)
+    ns['status'] = True
+    ns['msg'] = '创建实例成功'
+    return ns
+            
+ret = await create_pod(params_kw)
+return ret
+            

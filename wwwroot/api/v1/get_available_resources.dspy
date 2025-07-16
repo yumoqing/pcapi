@@ -1,0 +1,103 @@
+async def get_available_resources(ns={}):
+
+    # 创建 API 实例
+    v1 = client.CoreV1Api()
+
+    # 获取所有节点
+    nodes = v1.list_node()
+    # 获取所有 Pod
+    pods = v1.list_pod_for_all_namespaces()
+
+    # 存储节点资源信息
+    node_resources = {}
+
+    total_allocatable = {
+        'cpu': 0,
+        'memory': 0,
+        'gpu': 0,
+        'storage': 0
+    }
+    total_used = {
+        'cpu': 0,
+        'memory': 0,
+        'gpu': 0,
+        'storage': 0
+    }
+
+    for node in nodes.items:
+        name = node.metadata.name
+        allocatable = node.status.allocatable
+        node_resources[name] = {
+            'cpu_allocatable': int(allocatable.get('cpu', '0').rstrip('m')) / 1000 if 'm' in allocatable.get('cpu', '0') else int(allocatable.get('cpu', '0')),
+            'memory_allocatable': int(allocatable.get('memory', '0').rstrip('Ki')) / 1024 / 1024,
+            'gpu_allocatable': int(allocatable.get('nvidia.com/gpu', '0')),
+            'storage_allocatable': int(allocatable.get('ephemeral-storage', '0').rstrip('Ki')) / 1024 / 1024
+        }
+        # 累加总可分配资源
+        total_allocatable['cpu'] += node_resources[name]['cpu_allocatable']
+        total_allocatable['memory'] += node_resources[name]['memory_allocatable']
+        total_allocatable['gpu'] += node_resources[name]['gpu_allocatable']
+        total_allocatable['storage'] += node_resources[name]['storage_allocatable']
+
+        # 初始化已分配
+        node_resources[name].update({
+            'cpu_used': 0,
+            'memory_used': 0,
+            'gpu_used': 0,
+            'storage_used': 0
+        })
+
+    # 遍历所有 Pod,统计每个节点的已分配资源
+    for pod in pods.items:
+        if pod.spec.node_name:  # 确保 Pod 已被调度到节点
+            node_name = pod.spec.node_name
+            for container in pod.spec.containers:
+                reque = container.resources.requests or {}
+                node_resources[node_name]['cpu_used'] += float(reque.get('cpu', '0').rstrip('m')) / 1000 if 'm' in reque.get('cpu', '0') else float(reque.get('cpu', '0'))
+                node_resources[node_name]['memory_used'] += int(reque.get('memory', '0').rstrip('Mi')) if 'Mi' in reque.get('memory', '0') else int(reque.get('memory', '0').rstrip('Gi')) * 1024
+                node_resources[node_name]['gpu_used'] += int(reque.get('nvidia.com/gpu', '0'))
+                node_resources[node_name]['storage_used'] += int(reque.get('ephemeral-storage', '0').rstrip('Mi')) if 'Mi' in reque.get('ephemeral-storage', '0') else 0
+
+    # 计算总已使用资源
+    for node_name, resources in node_resources.items():
+        total_used['cpu'] += resources['cpu_used']
+        total_used['memory'] += resources['memory_used']
+        total_used['gpu'] += resources['gpu_used']
+        total_used['storage'] += resources['storage_used']
+
+        # 计算节点的资源占用情况
+        print(f"Node: {node_name}")
+        print(f"  CPU Remaining: {resources['cpu_allocatable'] - resources['cpu_used']} cores")
+        print(f"  Memory Remaining: {resources['memory_allocatable'] - resources['memory_used']} Mi")
+        print(f"  GPU Remaining: {resources['gpu_allocatable'] - resources['gpu_used']} GPUs")
+        print(f"  Storage Remaining: {resources['storage_allocatable'] - resources['storage_used']} Mi")
+        print()
+
+    # 计算总剩余资源和使用百分比
+    total_remaining = {key: total_allocatable[key] - total_used[key] for key in total_allocatable}
+    usage_percentage = {key: (total_used[key] / total_allocatable[key] * 100 if total_allocatable[key] > 0 else 0) for key in total_allocatable}
+
+    # 输出总资源和使用情况
+    print("Cluster Resource Summary:")
+    print(f"  Total Allocatable CPU: {total_allocatable['cpu']} cores")
+    print(f"  Total Allocatable Memory: {total_allocatable['memory']} Mi")
+    print(f"  Total Allocatable GPU: {total_allocatable['gpu']} GPUs")
+    print(f"  Total Allocatable Storage: {total_allocatable['storage']} Mi")
+    print()
+    print(f"  CPU Usage Percentage: {usage_percentage['cpu']:.2f}%")
+    print(f"  Memory Usage Percentage: {usage_percentage['memory']:.2f}%")
+    print(f"  GPU Usage Percentage: {usage_percentage['gpu']:.2f}%")
+    print(f"  Storage Usage Percentage: {usage_percentage['storage']:.2f}%")
+    print()
+
+    # 返回数据
+    return {
+        "total_allocatable": total_allocatable,
+        "total_used": total_used,
+        "total_remaining": total_remaining,
+        "usage_percentage": usage_percentage
+    }
+            
+ret = await get_available_resources(params_kw)
+return ret
+            

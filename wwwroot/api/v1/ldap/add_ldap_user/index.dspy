@@ -1,0 +1,11 @@
+info('test .....{params_kw=}')
+print(params_kw)
+uid=params_kw["uid"]
+uid_number=params_kw["uid_number"]
+plaintext_password=params_kw["plaintext_password"]
+cn=params_kw["cn"]
+
+result=add_ldap_user(uid,uid_number,plaintext_password,cn)
+
+result_dict["data"]=result
+return result_dict

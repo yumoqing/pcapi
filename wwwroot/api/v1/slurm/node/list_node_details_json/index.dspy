@@ -1,0 +1,20 @@
+info('test .....{params_kw=}')
+
+print(params_kw)
+if "PartitionName" in  params_kw:
+     result_partition=list_partition_detail_json(params_kw)
+     if len(result_partition)>0:
+        result=get_node_details_json(result_partition[0]["Nodes"])
+     else:
+        result=[]
+
+
+
+     result_dict["data"]=result
+
+     return result_dict
+else:
+     result=get_node_details_json(params_kw["NodeName"])
+     result_dict["data"]=result
+     return result_dict
+

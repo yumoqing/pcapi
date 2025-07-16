@@ -1,0 +1,3 @@
+git+https://git.kaiyuancloud.cn/yumoqing/apppublic
+git+https://git.kaiyuancloud.cn/yumoqing/sqlor
+git+https://git.kaiyuancloud.cn/yumoqing/ahserver

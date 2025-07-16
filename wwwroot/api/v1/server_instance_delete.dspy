@@ -1,0 +1,33 @@
+async def server_instance_delete(ns={}):
+    from kubernetes.client.rest import ApiException
+
+    # 加载 kubeconfig 配置
+    # config.load_kube_config()
+
+    # 设置你要删除的 pod 名称和所在的命名空间
+    namespace = ns['namespace'] if ns.get('namespace') else 'default'
+    podname = ns.get('podname')
+    pvcname = ns.get('pvcname')
+
+    # 创建 Pod API 客户端
+    v1 = client.CoreV1Api()
+    try:
+        # 删除 Pod
+        v1.delete_namespaced_pod(name=podname, namespace=namespace)
+        print(f"Pod {podname} 删除成功")
+        v1.delete_namespaced_persistent_volume_claim(name=pvcname, namespace=namespace)
+        print(f"PVC {pvcname} 删除成功")
+        return {
+            'status': True,
+            'msg': '实例删除成功'
+        }
+    except ApiException as e:
+        print(f"删除 Pod/PVC 失败: {e}")
+        return {
+            'status': False,
+            'msg': '实例删除失败, %s' % str(e)
+        }
+            
+ret = await server_instance_delete(params_kw)
+return ret
+            
