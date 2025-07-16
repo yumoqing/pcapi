@@ -309,16 +309,30 @@ echo "containerd配置初始纠正完成."
 
 echo "开始更新containerd配置以适配GPU实例"
 
-# 检查是否有 NVIDIA GPU
+# 检查 NVIDIA GPU
 if lspci | grep -i nvidia > /dev/null 2>&1; then
-    log_info "检测到NVIDIA GPU,开始配置nvidia-container-runtime..."
+    if [ "$1" == "worker" ]; then
+        log_info "检测到NVIDIA GPU,开始配置nvidia-container-runtime..."
 
-    dpkg -i /opt/*.deb || log_error "安装nvidia-container-runtime及其依赖失败!"
+        # 检查 .deb 文件是否存在
+        if [ ! "$(ls /opt/*.deb 2>/dev/null | wc -l)" -ge 1 ]; then
+          log_error "/opt/ 下没有 .deb 文件"
+          exit 1
+        fi
 
-    # 配置 containerd 支持 nvidia runtime
-    CONTAINERD_CONFIG="/etc/containerd/config.toml"
-    if ! grep -q '\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia\]' "$CONTAINERD_CONFIG"; then
-        cat <<EOF >> "$CONTAINERD_CONFIG"
+        # 安装 .deb 包
+        for deb in /opt/*.deb; do
+          dpkg -i "$deb" || log_error "安装 $deb 失败"
+        done
+
+        # 配置 containerd
+        CONTAINERD_CONFIG="/etc/containerd/config.toml"
+        if ! grep -q '
+$$
+plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia
+$$
+' "$CONTAINERD_CONFIG"; then
+            cat <<EOF >> "$CONTAINERD_CONFIG"
 
 [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
   privileged_without_host_devices = false
@@ -326,11 +340,17 @@ if lspci | grep -i nvidia > /dev/null 2>&1; then
   [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
     BinaryName = "/usr/bin/nvidia-container-runtime"
 EOF
-    fi
+        fi
 
-    # 重启 containerd
-    systemctl restart containerd
-    log_info "nvidia-container-runtime 配置完成,containerd已重启"
+        # 设置 default_runtime_name = "nvidia"
+        if ! grep -q '^default_runtime_name = "nvidia"$' "$CONTAINERD_CONFIG"; then
+          sed -i '/$$plugins."io.containerd.grpc.v1.cri"$$/{n;s/.*/  default_runtime_name = "nvidia"/;}' "$CONTAINERD_CONFIG"
+        fi
+
+        # 重启 containerd
+        systemctl restart containerd
+        log_info "nvidia-container-runtime 配置完成,containerd已重启"
+    fi
 else
     log_info "未检测到NVIDIA GPU,跳过nvidia-container-runtime配置"
 fi
