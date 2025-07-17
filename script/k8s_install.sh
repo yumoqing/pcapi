@@ -321,40 +321,58 @@ if lspci | grep -i nvidia > /dev/null 2>&1; then
         fi
 
         # 安装 .deb 包
-        for deb in /opt/*.deb; do
+        for deb in /opt/*_amd64.deb; do
           dpkg -i "$deb" || log_error "安装 $deb 失败"
         done
 
         # 配置 containerd
         CONTAINERD_CONFIG="/etc/containerd/config.toml"
-        if ! grep -q '
-$$
-plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia
-$$
-' "$CONTAINERD_CONFIG"; then
-            cat <<EOF >> "$CONTAINERD_CONFIG"
+        log_info "正在更新 $CONTAINERD_CONFIG 配置..."
 
-[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
-  privileged_without_host_devices = false
-  runtime_type = "io.containerd.runc.v2"
-  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
-    BinaryName = "/usr/bin/nvidia-container-runtime"
-EOF
+        # 1. 添加 nvidia 运行时配置（插入到 runtimes 块内部）
+        if ! grep -qF '[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]' "$CONTAINERD_CONFIG"; then
+            # 在 runtimes 块下插入 nvidia 配置（保持格式缩进）
+            sed -i '/\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes\]/a \
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
+          privileged_without_host_devices = false
+          runtime_type = "io.containerd.runc.v2"
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
+            BinaryName = "/usr/bin/nvidia-container-runtime"
+' "$CONTAINERD_CONFIG"
         fi
 
-        # 设置 default_runtime_name = "nvidia"
-        if ! grep -q '^default_runtime_name = "nvidia"$' "$CONTAINERD_CONFIG"; then
-          sed -i '/$$plugins."io.containerd.grpc.v1.cri"$$/{n;s/.*/  default_runtime_name = "nvidia"/;}' "$CONTAINERD_CONFIG"
+        # 2. 修改默认运行时为 nvidia（正确匹配配置项）
+        if ! grep -qF 'default_runtime_name = "nvidia"' "$CONTAINERD_CONFIG"; then
+            sed -i '/default_runtime_name = "runc"/s/"runc"/"nvidia"/' "$CONTAINERD_CONFIG"
         fi
 
-        # 重启 containerd
-        systemctl restart containerd
+        # 3. 重启 containerd 并检查状态
+        log_info "重启 containerd 服务..."
+        if systemctl restart containerd; then
+            log_info "containerd 重启成功"
+        else
+            log_error "containerd 重启失败,请检查配置文件"
+            exit 1
+        fi
 
-        # 严格匹配完整的环境变量行，避免误判注释或其他行
+        # 4. 配置 CUDA 环境变量
+        log_info "配置 CUDA 环境变量..."
         grep -qxF 'export PATH=/usr/local/cuda/bin:$PATH' ~/.bashrc || echo 'export PATH=/usr/local/cuda/bin:$PATH' >> ~/.bashrc
         grep -qxF 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' ~/.bashrc || echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
-        [[ "$-" == *i* ]] && source ~/.bashrc || echo "请执行: source ~/.bashrc"
-        nvcc -V || echo "CUDA 未安装或路径配置错误"
+        # 应用环境变量（非交互式shell提示手动执行）
+        if [[ "$-" == *i* ]]; then
+            source ~/.bashrc
+            log_info "环境变量已生效"
+        else
+            log_info "请手动执行 'source ~/.bashrc' 使环境变量生效"
+        fi
+
+        # 5. 验证 CUDA 安装
+        if command -v nvcc &>/dev/null; then
+            log_info "CUDA 版本信息: $(nvcc -V | grep -oP 'release \K\d+\.\d+')"
+        else
+            log_error "CUDA 未安装或配置错误,nvcc 命令未找到"
+        fi
 
         log_info "nvidia-container-runtime 配置完成,containerd已重启"
     fi
