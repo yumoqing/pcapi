@@ -378,7 +378,7 @@ if lspci | grep -i nvidia > /dev/null 2>&1; then
         fi
 
         # 5. 验证 CUDA 安装
-        nvcc -V
+        # nvcc -V
 
         log_info "nvidia-container-runtime 配置完成,containerd已重启"
     fi
