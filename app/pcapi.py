@@ -70,18 +70,18 @@ def init_func():
 	# g.delete_ldap_user=delete_ldap_user
 
 	### k8s多集群相关
-	g.new_cluster_install = new_cluster_install
-	g.get_multiple_cluster = get_multiple_cluster
-	g.get_multiple_cluster_pod = get_multiple_cluster_pod
-	g.get_cluster_nodes_by_server = get_cluster_nodes_by_server
-	g.get_cluster_pods_by_server = get_cluster_pods_by_server
-	g.delete_cluster_node = delete_cluster_node
-	g.node_state_switch = node_state_switch
-	g.yaml_apply_delete = yaml_apply_delete
-	g.get_cluster_nodes_by_kubeconfig = get_cluster_nodes_by_kubeconfig
-	g.determine_accommodat_by_kubeconfig = determine_accommodat_by_kubeconfig
-	g.get_cluster_pods_by_kubeconfig = get_cluster_pods_by_kubeconfig
-	g.node_label_opt = node_label_opt
+	g.new_cluster_install = awaitify(new_cluster_install)
+	g.get_multiple_cluster = awaitify(get_multiple_cluster)
+	g.get_multiple_cluster_pod = awaitify(get_multiple_cluster_pod)
+	g.get_cluster_nodes_by_server = awaitify(get_cluster_nodes_by_server)
+	g.get_cluster_pods_by_server = awaitify(get_cluster_pods_by_server)
+	g.delete_cluster_node = awaitify(delete_cluster_node)
+	g.node_state_switch = awaitify(node_state_switch)
+	g.yaml_apply_delete = awaitify(yaml_apply_delete)
+	g.get_cluster_nodes_by_kubeconfig = awaitify(get_cluster_nodes_by_kubeconfig)
+	g.determine_accommodat_by_kubeconfig = awaitify(determine_accommodat_by_kubeconfig)
+	g.get_cluster_pods_by_kubeconfig = awaitify(get_cluster_pods_by_kubeconfig)
+	g.node_label_opt = awaitify(node_label_opt)
 
 	g.get_storage_json=get_storage_json
 	g.result_dict={
