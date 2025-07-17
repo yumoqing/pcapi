@@ -3,7 +3,7 @@ info('test .....{params_kw=}')
 debug(f"接收cpcc参数：{params_kw=}")
 
 try:
-    result_dict["data"] = node_state_switch(params_kw)
+    result_dict["data"] = await node_state_switch(params_kw)
     result_dict["status"] = True
     result_dict["info"] = "operate success"
 except Exception as e:

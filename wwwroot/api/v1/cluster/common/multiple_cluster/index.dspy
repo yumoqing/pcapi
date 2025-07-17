@@ -1,7 +1,7 @@
 info('test .....{params_kw=}')
 
 try:
-    result_dict["data"] = get_multiple_cluster()
+    result_dict["data"] = await get_multiple_cluster()
     result_dict["status"] = True
     result_dict["info"] = "operate success"
 except Exception as e:
