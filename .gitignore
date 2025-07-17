@@ -1,0 +1,16 @@
+# pcapi忽略提交
+
+# 补充：通用 Python 缓存规则（如果其他目录也有 __pycache__,可选）
+__pycache__/
+*.py[cod]
+*.pyo
+
+# 补充：通用日志文件忽略（如果需要忽略整个 logs 目录或其他日志）
+logs/
+*.log
+
+k8s-images/
+
+conf/
+
+*.DS_Store
