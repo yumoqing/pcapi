@@ -349,6 +349,13 @@ EOF
 
         # 重启 containerd
         systemctl restart containerd
+
+        # 严格匹配完整的环境变量行，避免误判注释或其他行
+        grep -qxF 'export PATH=/usr/local/cuda/bin:$PATH' ~/.bashrc || echo 'export PATH=/usr/local/cuda/bin:$PATH' >> ~/.bashrc
+        grep -qxF 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' ~/.bashrc || echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+        [[ "$-" == *i* ]] && source ~/.bashrc || echo "请执行: source ~/.bashrc"
+        nvcc -V || echo "CUDA 未安装或路径配置错误"
+
         log_info "nvidia-container-runtime 配置完成,containerd已重启"
     fi
 else
