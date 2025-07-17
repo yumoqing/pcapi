@@ -378,11 +378,7 @@ if lspci | grep -i nvidia > /dev/null 2>&1; then
         fi
 
         # 5. 验证 CUDA 安装
-        if command -v nvcc &>/dev/null; then
-            log_info "CUDA 版本信息: $(nvcc -V | grep -oP 'release \K\d+\.\d+')"
-        else
-            log_error "CUDA 未安装或配置错误,nvcc 命令未找到"
-        fi
+        nvcc -V
 
         log_info "nvidia-container-runtime 配置完成,containerd已重启"
     fi
