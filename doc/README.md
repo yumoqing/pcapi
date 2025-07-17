@@ -1,31 +1,5 @@
-## pcapi_kboss.html和此文档内容是一样的，不要纠结看哪个，呈现形式(html直接打开看网页/markdown预览)不一样而已~
+## pcapi_kboss.html和此文档内容是一样的,不要纠结看哪个,呈现形式不一样而已~
 
----
-title: pcapi_kboss
-language_tabs:
-  - shell: Shell
-  - http: HTTP
-  - javascript: JavaScript
-  - ruby: Ruby
-  - python: Python
-  - php: PHP
-  - java: Java
-  - go: Go
-toc_footers: []
-includes: []
-search: true
-code_clipboard: true
-highlight_theme: darkula
-headingLevel: 2
-generator: "@tarslib/widdershins v4.0.30"
-
----
-
-# pcapi_kboss
-
-Base URLs:
-
-# Authentication
 
 # pcapi_kboss容器云/算力中心服务核心API
 
