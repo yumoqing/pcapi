@@ -7,7 +7,7 @@ info('test .....{params_kw=}')
 #    return result_dict
 #debug(f"accept cpcc node: {params_kw=}")
 try:
-    result_dict["data"] = determine_accommodat_by_kubeconfig(params_kw)
+    result_dict["data"] = await determine_accommodat_by_kubeconfig(params_kw)
     result_dict["status"] = True
     result_dict["info"] = "operate success"
 except:
