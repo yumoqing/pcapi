@@ -315,36 +315,45 @@ if lspci | grep -i nvidia > /dev/null 2>&1; then
         log_info "检测到NVIDIA GPU,开始配置nvidia-container-runtime..."
 
         # 检查 .deb 文件是否存在
-        if [ ! "$(ls /opt/*.deb 2>/dev/null | wc -l)" -ge 1 ]; then
-          log_error "/opt/ 下没有 .deb 文件"
-          exit 1
+        DEB_FILES=(/opt/*_amd64.deb)
+        if [ ! -e "${DEB_FILES[0]}" ]; then
+            log_error "/opt/ 下没有 .deb 文件"
+            exit 1
         fi
 
         # 安装 .deb 包
-        for deb in /opt/*_amd64.deb; do
-          dpkg -i "$deb" || log_error "安装 $deb 失败"
+        for deb in "${DEB_FILES[@]}"; do
+            dpkg -i "$deb" || {
+                log_error "安装 $deb 失败"
+                exit 1
+            }
         done
 
         # 配置 containerd
         CONTAINERD_CONFIG="/etc/containerd/config.toml"
         log_info "正在更新 $CONTAINERD_CONFIG 配置..."
 
-        # 1. 添加 nvidia 运行时配置（插入到 runtimes 块内部）
-        if ! grep -qF '[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]' "$CONTAINERD_CONFIG"; then
-            # 在 runtimes 块下插入 nvidia 配置（保持格式缩进）
-            sed -i '/\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes\]/a \
-        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
-          privileged_without_host_devices = false
-          runtime_type = "io.containerd.runc.v2"
-          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
-            BinaryName = "/usr/bin/nvidia-container-runtime"
-' "$CONTAINERD_CONFIG"
-        fi
+        # 1. 添加 nvidia 运行时配置到 runtimes 块内部
+        # 添加 nvidia runtime 配置到 runtimes 块下
+        NVIDIA_SECTION='plugins\."io\.containerd\.grpc\.v1\.cri"\.containerd\.runtimes\.nvidia'
+#         if ! grep -qF "[${NVIDIA_SECTION}]" "$CONTAINERD_CONFIG"; then
+#             sudo sed -i '/^
+# $$
+# plugins\."io\.containerd\.grpc\.v1\.cri"\.containerd\.runtimes
+# $$
+# $/a \
+#     [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]\n\
+#         privileged_without_host_devices = false\n\
+#         runtime_type = "io.containerd.runc.v2"\n\
+#         [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]\n\
+#             BinaryName = "/usr/bin/nvidia-container-runtime"' /etc/containerd/config.toml
+#         fi
 
-        # 2. 修改默认运行时为 nvidia（正确匹配配置项）
-        if ! grep -qF 'default_runtime_name = "nvidia"' "$CONTAINERD_CONFIG"; then
-            sed -i '/default_runtime_name = "runc"/s/"runc"/"nvidia"/' "$CONTAINERD_CONFIG"
-        fi
+#         # 2. 修改默认运行时为 nvidia
+#         if ! grep -qF 'default_runtime_name = "nvidia"' "$CONTAINERD_CONFIG"; then
+#             sudo sed -i 's/default_runtime_name = "runc"/default_runtime_name = "nvidia"/' "$CONTAINERD_CONFIG"
+#         fi
+        cp -v /opt/config.toml /etc/containerd/config.toml || log_error "直接复制containerd配置文件失败"
 
         # 3. 重启 containerd 并检查状态
         log_info "重启 containerd 服务..."
@@ -359,6 +368,7 @@ if lspci | grep -i nvidia > /dev/null 2>&1; then
         log_info "配置 CUDA 环境变量..."
         grep -qxF 'export PATH=/usr/local/cuda/bin:$PATH' ~/.bashrc || echo 'export PATH=/usr/local/cuda/bin:$PATH' >> ~/.bashrc
         grep -qxF 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' ~/.bashrc || echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+
         # 应用环境变量（非交互式shell提示手动执行）
         if [[ "$-" == *i* ]]; then
             source ~/.bashrc
