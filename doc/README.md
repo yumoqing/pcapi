@@ -1,4 +1,4 @@
-## pcapi_pcapi_kboss.html和此文档内容是一样的，不要纠结看哪个，呈现形式(html直接打开看网页/markdown预览)不一样而已~
+## pcapi_kboss.html和此文档内容是一样的，不要纠结看哪个，呈现形式(html直接打开看网页/markdown预览)不一样而已~
 
 ---
 title: pcapi_kboss
