@@ -13,7 +13,7 @@ from . import ssh_utils,k8s_utils_public
 from appPublic.log import debug
 import traceback
 
-async def delete_cluster_node(params):
+def delete_cluster_node(params):
     """
     删除集群节点
     --namespace 或 -n:指定节点所在的命名空间。不过,节点是集群级别的资源,不隶属于特定的命名空间,所以此参数一般不用于删除节点。
@@ -32,7 +32,7 @@ async def delete_cluster_node(params):
     """
     return "delete_cluster_node ok"
 
-async def node_state_switch(params):
+def node_state_switch(params):
     """
     恢复节点：
         kubectl uncordon 命令将节点标记为可调度状态,这样调度器就会重新考虑将新的 Pod 分配到该节点上
@@ -45,7 +45,7 @@ async def node_state_switch(params):
     """
     return "node_state_switch ok"
 
-async def yaml_apply_delete(params):
+def yaml_apply_delete(params):
     """
         1. 通过cpcc传递过来的参数进行级联初始化资源实例;
         2. 通过cpcc传递过来的参数进行级联更新资源实例;
@@ -60,7 +60,7 @@ async def yaml_apply_delete(params):
     elif instance_type == "LinuxOS":
         k8s_utils_linuxos_ubuntu.handle_k8s_operations(params)
 
-async def node_label_opt(params):
+def node_label_opt(params):
     """
         要设置节点 worker-node-1 上的标签 app,可以使用以下命令：
         kubectl label nodes worker-node-1 app=app,注意标签键和值之间有一个等号 (=),表示设置该标签。
@@ -106,7 +106,7 @@ async def node_label_opt(params):
         else:
             raise f"{worker_node} 解绑标签 {label} 失败,请检查集群节点状态或标签是否已绑定?"
     
-async def unset_node_label(params):
+def unset_node_label(params):
     """
     要取消节点 worker-node-1 上的标签 app,可以使用以下命令：
     kubectl label nodes worker-node-1 app-，注意标签键后面有一个短横线 (-),表示取消该标签。
@@ -121,7 +121,7 @@ async def unset_node_label(params):
     label = params.get("label")
     
 
-async def get_cluster_nodes_by_server(params):
+def get_cluster_nodes_by_server(params):
     host = params.get("host")
     port = int(params.get("port"))
     username = params.get("user")
@@ -137,7 +137,7 @@ async def get_cluster_nodes_by_server(params):
     # debug(f'集群 {host=} 所有节点信息如下{results=} => 转换后:\n{parse_k8s_nodes_result=}')
     return parse_k8s_nodes_result
 
-async def get_cluster_pods_by_kubeconfig(params):
+def get_cluster_pods_by_kubeconfig(params):
     """
         通过调用方传递来的kubeconfig信息
         获取集群中所有资源实例(Pod)信息详情
@@ -145,7 +145,7 @@ async def get_cluster_pods_by_kubeconfig(params):
     kubeconfig = params.get("kubeconfig")
     return k8s_utils_public.get_pod_info(kubeconfig)
 
-async def determine_accommodat_by_kubeconfig(params):
+def determine_accommodat_by_kubeconfig(params):
     """
         通过调用方传递来的kubeconfig信息
         判断集群中可部署哪些部件组合n
@@ -157,7 +157,7 @@ async def determine_accommodat_by_kubeconfig(params):
     # debug(f'=====kubeconfig: {kubeconfig}, resources: {resources}')
     return k8s_utils_public.determine_accommodat(kubeconfig, resources)
 
-async def get_cluster_nodes_by_kubeconfig(params):
+def get_cluster_nodes_by_kubeconfig(params):
     """
         通过调用方传递来的kubeconfig信息
         获取集群中所有节点信息详情
@@ -165,7 +165,7 @@ async def get_cluster_nodes_by_kubeconfig(params):
     kubeconfig = params.get("kubeconfig")
     return k8s_utils_public.get_node_info(kubeconfig)
 
-async def get_cluster_pods_by_server(params):
+def get_cluster_pods_by_server(params):
     host = params.get("host")
     port = int(params.get("port"))
     username = params.get("user")
@@ -182,7 +182,7 @@ async def get_cluster_pods_by_server(params):
     # debug(f'集群 {host=} 所有Pod信息如下{results=} => 转换后:\n{parse_k8s_pods_result=}')
     return parse_k8s_pods_result
 
-async def new_cluster_install(params):
+def new_cluster_install(params):
     # 随后填充远程操控k8s主逻辑
     """
         用于接收cpcc端传递过来的k8s安装指令参数, 进行远程sshx调用操作内网机器进行集群节点的安装
@@ -275,7 +275,7 @@ async def new_cluster_install(params):
         
     return results
 
-async def get_multiple_cluster_pod():
+def get_multiple_cluster_pod():
     """
     获取 kubeconfig 中所有集群的 Pod 信息（JSON 格式）
     
@@ -326,7 +326,7 @@ async def get_multiple_cluster_pod():
     return all_clusters_pods
 
 
-async def get_multiple_cluster():
+def get_multiple_cluster():
     """
     获取所有集群的完整信息,包括用户证书、RBAC状态、服务账号颁发者等。
 
@@ -445,7 +445,7 @@ async def get_multiple_cluster():
         }, indent=4)
 
 
-async def process_kubeconfigs():
+def process_kubeconfigs():
     """
     检测当前目录下的 kubestage 文件夹中的 kubeconfig 格式文件,
     计算每个文件的大写 MD5 值,将其改名成对应的 MD5 值,
