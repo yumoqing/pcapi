@@ -224,13 +224,13 @@ async def new_cluster_install(params):
         if username == "root":
             # 如果是root用户,直接执行安装脚本
             debug(f'开始Root用户安装集群节点,用户名: {username}, 角色: {role},主机: {host},端口: {port}')
-            ssh_utils.ssh_execute_command(host, port, username, password, 
+            await ssh_utils.ssh_execute_command(host, port, username, password, 
                                     install_clusterrole_command, real_time_log=True,
                                     scp_map=scp_map)
         else:
             # 如果是普通用户,需要先将处理好
             debug(f'开始普通用户安装集群节点,用户名: {username}, 角色: {role},主机: {host},端口: {port}')
-            ssh_utils.ssh_execute_command_noroot(host, port, username, password, 
+            await ssh_utils.ssh_execute_command_noroot(host, port, username, password, 
                                     install_clusterrole_command, real_time_log=True,
                                     scp_map=scp_map,
                                     sudo_timeout=500)  # 设置较长的超时时间，适应K8s安装过程
@@ -245,19 +245,19 @@ async def new_cluster_install(params):
         # 第三步：返回加入凭证给cpcc保存（pcapi无状态）
         clusterauth_command = ['kubeadm token create --print-join-command --ttl 0']
         if username != "root":
-            join_idp = ssh_utils.ssh_execute_command_noroot(host, port, username, password, clusterauth_command,
+            join_idp = await ssh_utils.ssh_execute_command_noroot(host, port, username, password, clusterauth_command,
                                                              real_time_log=True, sudo_timeout=60)  # 获取token命令应该较快完成
         else:
-            join_idp = ssh_utils.ssh_execute_command(host, port, username, password, clusterauth_command, real_time_log=True)
+            join_idp = await ssh_utils.ssh_execute_command(host, port, username, password, clusterauth_command, real_time_log=True)
         join_idp = join_idp[0][0].strip()
         debug(f'集群验证码:{join_idp=}')
         kubeconfig_context_command = ['cat /root/.kube/config']
         if username != "root":
-            kubeconfig = ssh_utils.ssh_execute_command_noroot(host, port, username, password, 
+            kubeconfig = await ssh_utils.ssh_execute_command_noroot(host, port, username, password, 
                                                               kubeconfig_context_command, real_time_log=True, 
                                                               sudo_timeout=60)  # 获取kubeconfig命令应该较快完成
         else:
-            kubeconfig = ssh_utils.ssh_execute_command(host, port, username, password, kubeconfig_context_command, real_time_log=True)
+            kubeconfig = await ssh_utils.ssh_execute_command(host, port, username, password, kubeconfig_context_command, real_time_log=True)
         kubeconfig = kubeconfig[0][0].strip()
         debug(f'集群上下文:{kubeconfig=}')
         results = join_idp + "###" + kubeconfig
@@ -269,10 +269,10 @@ async def new_cluster_install(params):
 
         join_command = params.get("join_command")
         if username != "root":
-            ssh_utils.ssh_execute_command_noroot(host, port, username, password, [join_command], 
+            await ssh_utils.ssh_execute_command_noroot(host, port, username, password, [join_command], 
                                                  real_time_log=True, sudo_timeout=120)  # 工作节点加入可能需要一些时间
         else:
-            ssh_utils.ssh_execute_command(host, port, username, password, [join_command], real_time_log=True)
+            await ssh_utils.ssh_execute_command(host, port, username, password, [join_command], real_time_log=True)
         
     return results
 
