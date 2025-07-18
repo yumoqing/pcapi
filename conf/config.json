@@ -5,7 +5,7 @@
         "logfile":"$[workdir]$/logs/pcapi.log"
     },  
     "authentication":{
-	    "user":"root",
+	    "user":"ysh",
 	    "password":"Kyy@123456",
 	    "iplist":[
 		    "47.93.12.75",
