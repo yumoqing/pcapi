@@ -471,6 +471,30 @@ chown -R root:root $nfs_share_path/containerd $nfs_share_path/kubelet $nfs_share
 
 log_info "K8s数据目录迁移完成,所有数据将存储于$nfs_share_path下。"
 
+# 防火墙开放端口
+log_info "开放防火墙端口..."
+# 安装并配置 ufw（仅开放必要端口）
+# 开放 Kubernetes 控制平面端口
+sudo ufw allow 6443/tcp
+sudo ufw allow 10257/tcp
+sudo ufw allow 2379:2380/tcp
+
+# 开放 kubelet 和组件通信端口（仅限集群内部）
+# 注意：10250 端口需严格限制访问,避免暴露到公网
+sudo ufw allow 10250:10252/tcp
+
+# 开放 NodePort 服务端口范围
+sudo ufw allow 30000:32767/tcp
+
+# 开放 CNI 插件端口（如 Calico）
+sudo ufw allow 4789/udp
+sudo ufw allow 179/tcp
+
+# 开放 Ingress 端口（如 Nginx Ingress）
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+# sudo ufw enable
+
 # 判断是主节点还是副节点
 if [ "$1" == "master" ]; then
     #  写入hosts
@@ -479,29 +503,7 @@ if [ "$1" == "master" ]; then
     # fi
     # 修改主机名,这里假设新主机名为 k8s-node,可根据实际情况修改
     hostnamectl set-hostname k8s-master || log_error "修改主机名失败"
-    # 防火墙开放端口
-    log_info "开放防火墙端口..."
-    # 安装并配置 ufw（仅开放必要端口）
-    # 开放 Kubernetes 控制平面端口
-    sudo ufw allow 6443/tcp
-    sudo ufw allow 10257/tcp
-    sudo ufw allow 2379:2380/tcp
 
-    # 开放 kubelet 和组件通信端口（仅限集群内部）
-    # 注意：10250 端口需严格限制访问,避免暴露到公网
-    sudo ufw allow 10250:10252/tcp
-
-    # 开放 NodePort 服务端口范围
-    sudo ufw allow 30000:32767/tcp
-
-    # 开放 CNI 插件端口（如 Calico）
-    sudo ufw allow 4789/udp
-    sudo ufw allow 179/tcp
-
-    # 开放 Ingress 端口（如 Nginx Ingress）
-    sudo ufw allow 80/tcp
-    sudo ufw allow 443/tcp
-    # sudo ufw enable
     # 主节点安装步骤
     log_info "正在master节点进行安装core和初始化"
     # kubeadm config images list
@@ -542,8 +544,8 @@ if [ "$1" == "master" ]; then
         kubectl apply -f /opt/components.yaml || log_error "本地安装MetricsServer插件失败"
         # log_info "正在安装Ingress-nginx-controller插件"
         # kubectl apply -f /opt/ingress-nginx-controller.yaml || log_error "本地安装ingress-nginx-controller插件失败"
-        log_info "正在安装GPU模式必要插件"
-        kubectl apply -f /opt/nvidia-device-plugin.yml || log_error "本地安装GPU模式必要插件失败"
+        # log_info "正在安装GPU模式必要插件"
+        # kubectl apply -f /opt/nvidia-device-plugin.yml || log_error "本地安装GPU模式必要插件失败"
         log_info "正在安装nfs-client-provisioner插件"
         aptitude -y install nfs-kernel-server nfs-common=1:1.3.4-2.5ubuntu3.7
         if [ $? -ne 0 ]; then
