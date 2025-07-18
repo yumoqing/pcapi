@@ -9,7 +9,7 @@ import paramiko
 import socket
 import traceback
 
-def ssh_execute_command(host, port, username, password, commands, real_time_log=False, 
+async def ssh_execute_command(host, port, username, password, commands, real_time_log=False, 
                         remote_exec=True, scp_map=dict()):
     try:
         # 创建 SSH 对象
@@ -62,7 +62,7 @@ def ssh_execute_command(host, port, username, password, commands, real_time_log=
     
 # ----------------------------------------以下是非Root用户进行Root操作基座-------------------------------------------
 
-def ssh_execute_command_noroot(host, port, username, password, commands, real_time_log=False,
+async def ssh_execute_command_noroot(host, port, username, password, commands, real_time_log=False,
                         remote_exec=True, scp_map=dict(), temp_dir="/tmp/ssh_temp", sudo_timeout=500):
     """
     增强版SSH执行命令函数，支持普通用户向root目录传输文件和执行sudo命令
@@ -137,7 +137,7 @@ def ssh_execute_command_noroot(host, port, username, password, commands, real_ti
         return [(None, str(e))]
 
 
-def execute_sudo_command(ssh, command, password, real_time_log, sudo_timeout, username):
+async def execute_sudo_command(ssh, command, password, real_time_log, sudo_timeout, username):
     """
     执行需要sudo权限的命令，处理密码交互和超时
     """
