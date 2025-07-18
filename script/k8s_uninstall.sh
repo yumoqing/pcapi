@@ -1,87 +1,117 @@
 #!/bin/bash
+set -euo pipefail
 
-# 停止K8s相关服务
-echo "停止K8s相关服务..."
-ps -aux | grep Opera | grep -v grep | awk '{print $2}' | xargs kill -9
-systemctl stop kubelet
-echo "移除缓存忘卡配置"
-ip link delete cni0
-systemctl stop kube-apiserver
+# 定义颜色输出函数
+red_echo() {
+    echo -e "\033[31m$1\033[0m"
+}
+green_echo() {
+    echo -e "\033[32m$1\033[0m"
+}
+yellow_echo() {
+    echo -e "\033[33m$1\033[0m"
+}
 
-systemctl stop nfs-kernel-server
-rm -rf /k8sdata/*
+# ========================
+# 清理流程
+# ========================
+cleanup_steps() {
+    # 1. 停止服务
+    green_echo "1. 停止K8s及容器运行时服务..."
+    systemctl stop kubelet kube-apiserver kube-controller-manager kube-scheduler kube-proxy etcd nfs-kernel-server containerd docker &> /dev/null || true
+    systemctl disable kubelet kube-apiserver kube-controller-manager kube-scheduler kube-proxy etcd nfs-kernel-server containerd docker &> /dev/null || true
 
-# 执行kubeadm reset
-echo "执行kubeadm reset..."
-kubeadm reset -f
+    # 2. 清理进程
+    green_echo "2. 清理K8s相关进程..."
+    ps -aux | grep -E 'kube|etcd|containerd|docker' | grep -v grep | awk '{print $2}' | xargs -r kill -9 &> /dev/null || true
 
-apt-get purge kubelet kubectl kubeadm kubernetes-cni -y --allow-change-held-packages
-rm -rf /etc/cni/net.d
+    # 3. 清理网络资源
+    green_echo "3. 清理CNI网络资源..."
+    ip link delete cni0 &> /dev/null || true
+    ip link delete flannel.1 &> /dev/null || true
+    rm -rf /var/lib/cni/networks/* /var/lib/cni/loader/* /etc/cni/net.d/* &> /dev/null || true
 
-rm -rf /var/lib/kubelet /var/lib/kubernetes
-rm -rf /etc/kubernetes/manifests
-rm -rf /etc/kubernetes/pki
-rm -rf /etc/kubernetes
-rm -rf /var/lib/etcd
-rm -rf /var/lib/cni
-rm -rf /var/lib/docker
-rm -rf /var/lib/containerd
-rm -rf /var/lib/etcd
-rm -rf /var/lib/kubelet
-rm -rf /var/lib/kube-proxy
-# 删除K8s配置文件
-echo "删除K8s配置文件..."
-sudo rm -rf /etc/kubernetes
+    # 4. kubeadm reset
+    green_echo "4. 执行kubeadm reset..."
+    kubeadm reset -f &> /dev/null || true
 
-# 删除K8s相关二进制文件（假设在/usr/local/bin）
-echo "删除K8s相关二进制文件..."
-sudo rm /usr/local/bin/kube*
+    # 5. 卸载软件包
+    green_echo "5. 卸载K8s及容器运行时软件包..."
+    apt-get purge -y kubelet kubectl kubeadm kubernetes-cni cri-tools containerd.io docker-ce docker-ce-cli &> /dev/null || true
+    apt-get autoremove -y &> /dev/null || true
 
-# 清理Containerd数据（谨慎操作）
-echo "清理Containerd数据..."
-sudo rm -rf /var/lib/containerd /usr/bin/containerd*
-sudo apt purge -y containerd containerd.io cri-tools --allow-change-held-packages
-rm -rf /etc/containerd /var/lib/containerd /run/containerd
-rm -f /etc/systemd/system/multi-user.target.wants/containerd.service
-rm /lib/systemd/system/containerd.service
-systemctl daemon-reload
+    # 6. 清理配置和数据目录
+    green_echo "6. 清理配置和数据目录..."
+    rm -rf /etc/kubernetes /var/lib/kubelet /var/lib/kubernetes /var/lib/etcd /var/lib/kubeadm /var/lib/kube-proxy /var/lib/containerd /var/lib/docker &> /dev/null || true
 
-# 清理iptables规则
-echo "清理iptables规则..."
-# sudo iptables -F && sudo iptables -t nat -F && sudo iptables -t mangle -F && sudo iptables -X
-# ipvsadm --clear
-apt autoremove -y
-apt autoclean -y
-apt clean -y
-apt update -y
+    # 7. 清理systemd服务残留
+    green_echo "7. 清理systemd服务残留..."
+    rm -f /lib/systemd/system/{containerd,docker,kubelet}.service &> /dev/null || true
+    rm -f /etc/systemd/system/multi-user.target.wants/{containerd,docker,kubelet}.service &> /dev/null || true
+    systemctl daemon-reload &> /dev/null || true
 
-# 停止docker
-echo "停止docker并清理..."
-docker rmi $(docker images -q)
-docker stop $(docker ps -aq) && docker rm $(docker ps -aq) && sudo systemctl stop docker
-sudo systemctl stop docker.service
-sudo systemctl stop docker.socket
-rm -rf /etc/docker/daemon.json
-rm -rf /usr/bin/docker-compose
+    # 8. 清理网络规则
+    green_echo "8. 清理iptables和ipvs规则..."
+    iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X &> /dev/null || true
+    ipvsadm --clear &> /dev/null || true
 
-# 清理Docker
-apt-get purge docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras -y --allow-change-held-packages
-apt purge -y containerd.io containerd
+    # 9. 清理源和kubeconfig
+    green_echo "9. 清理软件源和kubeconfig..."
+    rm -rf /etc/apt/sources.list.d/{docker,kubernetes,kuboard}* &> /dev/null || true
+    rm -rf $HOME/.kube/config &> /dev/null || true
 
-# 检查并删除当前root用户的kubeconfig文件
-echo "检查并删除当前root用户的kubeconfig文件..."
-sudo rm -rf $HOME/.kube/config
+    # 10. 更新软件包缓存
+    green_echo "10. 更新软件包缓存..."
+    apt-get update &> /dev/null || true
+}
 
-# kubord
-echo "清理kuboard相关配置..."
-sed -i '/\/opt \*(rw,sync,no_root_squash)/d' /etc/exports
+# ========================
+# 验证清理结果
+# ========================
+verify_cleanup() {
+    green_echo "\n开始验证清理结果..."
+    local is_clean=true
 
-rm -rf /etc/apt/sources.list.d/docker*
-rm -rf /etc/apt/sources.list.d/kubernetes*
-rm -rf /etc/apt/sources.list.d/kuboard*
+    # 检查关键服务状态
+    for service in kubelet docker containerd; do
+        if systemctl is-active "$service" &> /dev/null; then
+            red_echo "  ❌ 服务 $service 仍在运行"
+            is_clean=false
+        else
+            green_echo "  ✔️ 服务 $service 已停止"
+        fi
+    done
 
-apt autoremove -y
-apt autoclean -y
-apt clean -y
+    # 检查关键命令是否残留
+    for cmd in kubectl kubeadm docker containerd; do
+        if command -v "$cmd" &> /dev/null; then
+            red_echo "  ❌ 命令 $cmd 仍存在"
+            is_clean=false
+        else
+            green_echo "  ✔️ 命令 $cmd 已移除"
+        fi
+    done
 
-echo "恭喜你!!! K8s相关内容已清理, 可准备重新安装。"
+    # 检查关键目录是否残留
+    for dir in /etc/kubernetes /var/lib/kubelet /var/lib/containerd /var/lib/docker; do
+        if [ -d "$dir" ]; then
+            red_echo "  ❌ 目录 $dir 未完全清理"
+            is_clean=false
+        else
+            green_echo "  ✔️ 目录 $dir 已删除"
+        fi
+    done
+
+    # 最终结果
+    if $is_clean; then
+        green_echo "\n🎉 清理成功！环境已准备好重新安装K8s。"
+    else
+        red_echo "\n❌ 清理不彻底，请手动检查残留项！"
+    fi
+}
+
+# ========================
+# 执行清理和验证
+# ========================
+cleanup_steps
+verify_cleanup

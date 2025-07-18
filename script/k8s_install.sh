@@ -20,12 +20,16 @@ echo 'force-confold' > /etc/dpkg/dpkg.cfg.d/force-confold
 # 优化：仅停止packagekit（不mask）
 systemctl stop packagekit
 
+
 echo "########## 安装K8S必须root用户下执行 ###########"
 # 检查是否为root用户
 if [ "$(id -u)" != "0" ]; then
     echo "请以root用户身份运行此脚本"
     exit 1
 fi
+
+echo "########## 先清理K8S缓存/环境 ###########"
+/opt/k8s_uninstall.sh || log_error "清理K8S环境失败,请检查脚本或手动清理残留"
 
 # 新ubuntu18.04设备环境先换阿里源：
 cp /etc/apt/sources.list /etc/apt/sources.list.bak
@@ -536,8 +540,8 @@ if [ "$1" == "master" ]; then
         kubectl apply -f /opt/kube-flannel.yml || log_error "本地安装flannel网络插件失败"
         log_info "正在安装MetricsServer插件"
         kubectl apply -f /opt/components.yaml || log_error "本地安装MetricsServer插件失败"
-        log_info "正在安装Ingress-nginx-controller插件"
-        kubectl apply -f /opt/ingress-nginx-controller.yaml || log_error "本地安装ingress-nginx-controller插件失败"
+        # log_info "正在安装Ingress-nginx-controller插件"
+        # kubectl apply -f /opt/ingress-nginx-controller.yaml || log_error "本地安装ingress-nginx-controller插件失败"
         log_info "正在安装GPU模式必要插件"
         kubectl apply -f /opt/nvidia-device-plugin.yml || log_error "本地安装GPU模式必要插件失败"
         log_info "正在安装nfs-client-provisioner插件"
