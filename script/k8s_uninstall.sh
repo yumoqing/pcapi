@@ -188,8 +188,9 @@ verify_perfect_cleanup() {
 
     # 2. 验证命令无残留
     green_echo "2. 验证命令无残留..."
-    local cmds=(kubectl kubeadm kubelet containerd docker etcd)
+    local cmds=(kubectl kubelet containerd docker etcd kubeadm)
     for cmd in "${cmds[@]}"; do
+        sleep 1  # 确保命令列表更新
         if command -v "$cmd" &> /dev/null; then
             red_echo "  ❌ 命令 $cmd 仍存在"
             is_perfect=false
