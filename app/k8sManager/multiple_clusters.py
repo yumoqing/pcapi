@@ -82,10 +82,10 @@ async def node_label_opt(params):
         get_cluster_node_cmd = [f"kubectl label nodes {worker_node} {label} --overwrite"]
         debug(f'绑定标签命令: {get_cluster_node_cmd}')
         if username != "root":
-            results = ssh_utils.ssh_execute_command_noroot(host, port, username, password, 
+            results = await ssh_utils.ssh_execute_command_noroot(host, port, username, password, 
                                                            get_cluster_node_cmd, sudo_timeout=10)  # 设置标签可能需要一些时间
         else:
-            results = ssh_utils.ssh_execute_command(host, port, username, password, get_cluster_node_cmd)    
+            results = await ssh_utils.ssh_execute_command(host, port, username, password, get_cluster_node_cmd)    
         overwrite_info = results[0][0].strip()
         if "not labeled" in overwrite_info:
             raise f"{worker_node} 绑定标签 {label} 失败,请检查集群节点状态或标签是否已绑定?"
@@ -95,10 +95,10 @@ async def node_label_opt(params):
         get_cluster_node_cmd = [f"kubectl label nodes %s %s-" % (worker_node,label.split('=')[0])]
         debug(f'解绑标签命令: {get_cluster_node_cmd}')
         if username != "root":
-            results = ssh_utils.ssh_execute_command_noroot(host, port, username, password,
+            results = await ssh_utils.ssh_execute_command_noroot(host, port, username, password,
                                                             get_cluster_node_cmd, sudo_timeout=10)   # 取消标签可能需要一些时间
         else:
-            results = ssh_utils.ssh_execute_command(host, port, username, password, get_cluster_node_cmd)
+            results = await ssh_utils.ssh_execute_command(host, port, username, password, get_cluster_node_cmd)
         # debug(f'解绑标签结果: {results}')
         overwrite_info = results[0][0].strip()
         if "unlabeled" in overwrite_info or overwrite_info == "":
@@ -128,10 +128,10 @@ async def get_cluster_nodes_by_server(params):
     password = params.get("password")
     get_cluster_node_cmd = ["kubectl get nodes -o wide --show-labels"]
     if username != "root":
-        results = ssh_utils.ssh_execute_command_noroot(host, port, username, password, 
+        results = await ssh_utils.ssh_execute_command_noroot(host, port, username, password, 
                                                        get_cluster_node_cmd, sudo_timeout=10)
     else:
-        results = ssh_utils.ssh_execute_command(host, port, username, password, get_cluster_node_cmd)
+        results = await ssh_utils.ssh_execute_command(host, port, username, password, get_cluster_node_cmd)
     parse_k8s_nodes_result = results[0][0].strip()
     parse_k8s_nodes_result = parse_k8s_params.parse_k8s_nodes(parse_k8s_nodes_result)
     # debug(f'集群 {host=} 所有节点信息如下{results=} => 转换后:\n{parse_k8s_nodes_result=}')
@@ -173,10 +173,10 @@ async def get_cluster_pods_by_server(params):
     # get_cluster_node_cmd = ["kubectl get pods --all-namespaces -o wide"]
     get_cluster_pod_cmd = ["kubectl get pods --all-namespaces -o wide | grep -Ev 'kube-flannel|kube-system'"]
     if username != "root":
-        results = ssh_utils.ssh_execute_command_noroot(host, port, username, password, 
+        results = await ssh_utils.ssh_execute_command_noroot(host, port, username, password, 
                                                        get_cluster_pod_cmd, sudo_timeout=10)
     else:
-        results = ssh_utils.ssh_execute_command(host, port, username, password, get_cluster_pod_cmd)
+        results = await ssh_utils.ssh_execute_command(host, port, username, password, get_cluster_pod_cmd)
     parse_k8s_pods_result = results[0][0].strip()
     parse_k8s_pods_result = parse_k8s_params.parse_k8s_pods(parse_k8s_pods_result)
     # debug(f'集群 {host=} 所有Pod信息如下{results=} => 转换后:\n{parse_k8s_pods_result=}')
