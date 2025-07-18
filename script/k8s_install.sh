@@ -540,14 +540,14 @@ if [ "$1" == "master" ]; then
         # 安装网络插件
         log_info "正在安装网络插件(flannel)"
         kubectl apply -f /opt/kube-flannel.yml || log_error "本地安装flannel网络插件失败"
-        log_info "正在安装MetricsServer插件"
-        kubectl apply -f /opt/components.yaml || log_error "本地安装MetricsServer插件失败"
         # log_info "正在安装Ingress-nginx-controller插件"
         # kubectl apply -f /opt/ingress-nginx-controller.yaml || log_error "本地安装ingress-nginx-controller插件失败"
-        # log_info "正在安装GPU模式必要插件"
-        # kubectl apply -f /opt/nvidia-device-plugin.yml || log_error "本地安装GPU模式必要插件失败"
         log_info "正在安装nfs-client-provisioner插件"
         aptitude -y install nfs-kernel-server nfs-common=1:1.3.4-2.5ubuntu3.7
+        # log_info "正在安装MetricsServer插件"
+        # kubectl apply -f /opt/components.yaml || log_error "本地安装MetricsServer插件失败"
+        # log_info "正在安装GPU模式必要插件"
+        # kubectl apply -f /opt/nvidia-device-plugin.yml || log_error "本地安装GPU模式必要插件失败"
         if [ $? -ne 0 ]; then
             echo "NFS 服务器端安装失败,请检查网络连接或软件源。"
             exit 1
