@@ -28,8 +28,8 @@ if [ "$(id -u)" != "0" ]; then
     exit 1
 fi
 
-echo "########## 先清理K8S缓存/环境 ###########"
-/opt/k8s_uninstall.sh || log_error "清理K8S环境失败,请检查脚本或手动清理残留"
+# echo "########## 先清理K8S缓存/环境 ###########"
+# /opt/k8s_uninstall.sh || log_error "清理K8S环境失败,请检查脚本或手动清理残留"
 
 # 新ubuntu18.04设备环境先换阿里源：
 cp /etc/apt/sources.list /etc/apt/sources.list.bak
