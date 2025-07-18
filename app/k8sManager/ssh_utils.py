@@ -103,23 +103,23 @@ async def ssh_execute_command_noroot(host, port, username, password, commands, r
             for temp_path, final_path in temp_scp_map.items():
                 # 确保目标目录存在
                 mkdir_cmd = f"sudo mkdir -p $(dirname {final_path})"
-                execute_sudo_command(ssh, mkdir_cmd, password, real_time_log, sudo_timeout, username)
+                await execute_sudo_command(ssh, mkdir_cmd, password, real_time_log, sudo_timeout, username)
 
                 # 移动文件
                 move_cmd = f"sudo mv {temp_path} {final_path}"
-                execute_sudo_command(ssh, move_cmd, password, real_time_log, sudo_timeout, username)
+                await execute_sudo_command(ssh, move_cmd, password, real_time_log, sudo_timeout, username)
 
                 # 设置文件权限
                 chmod_cmd = f"sudo chmod 644 {final_path}"
                 if final_path.endswith('.sh'):  # 脚本文件设置可执行权限
                     chmod_cmd = f"sudo chmod 755 {final_path}"
-                execute_sudo_command(ssh, chmod_cmd, password, real_time_log, sudo_timeout, username)
+                await execute_sudo_command(ssh, chmod_cmd, password, real_time_log, sudo_timeout, username)
 
         # 执行远程命令（如果需要）
         if remote_exec:
             for command in commands:
                 # 执行需要sudo权限的命令
-                result, error = execute_sudo_command(ssh, command, password, real_time_log, sudo_timeout, username)
+                result, error = await execute_sudo_command(ssh, command, password, real_time_log, sudo_timeout, username)
                 all_results.append((result, error))
 
         # 清理临时目录
