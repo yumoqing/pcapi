@@ -296,13 +296,13 @@ def create_or_update_statefulset(apps_v1, v1, namespace_name, statefulset_name, 
                 "kind": "StatefulSet",
                 "metadata": {"name": statefulset_name, "namespace": namespace_name},
                 "spec": {
-                    "runtimeClassName": "nvidia",  # 指定使用 nvidia runtime"
                     "replicas": replicas,
                     "selector": {"matchLabels": source_selflabel},
                     "serviceName": statefulset_name,
                     "template": {
                         "metadata": {"labels": source_selflabel},
                         "spec": {
+                            "runtimeClassName": "nvidia",  # 指定使用 nvidia runtime"
                             "serviceAccountName": service_account_name,
                             "restartPolicy": restart_policy,
                             "containers": [container_config],
