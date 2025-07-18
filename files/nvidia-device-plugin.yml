@@ -28,13 +28,14 @@ spec:
       labels:
         name: nvidia-device-plugin-ds
     spec:
+      runtimeClassName: nvidia  # 指定使用 nvidia runtime
       tolerations:
       - key: nvidia.com/gpu
         operator: Exists
         effect: NoSchedule
       priorityClassName: "system-node-critical"
       containers:
-      - image: nvcr.io/nvidia/k8s-device-plugin:v0.13.0
+      - image: nvcr.io/nvidia/k8s-device-plugin:v0.16.1
         name: nvidia-device-plugin-ctr
         securityContext:
           allowPrivilegeEscalation: false
