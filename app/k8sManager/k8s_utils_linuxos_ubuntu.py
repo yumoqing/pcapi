@@ -302,7 +302,7 @@ def create_or_update_statefulset(apps_v1, v1, namespace_name, statefulset_name, 
                     "template": {
                         "metadata": {"labels": source_selflabel},
                         "spec": {
-                            "runtimeClassName": "nvidia",  # 指定使用 nvidia runtime"
+                            **({"runtimeClassName": "nvidia"} if source_gpu > 0 else {}),  # 指定使用 nvidia runtime"
                             "serviceAccountName": service_account_name,
                             "restartPolicy": restart_policy,
                             "containers": [container_config],
